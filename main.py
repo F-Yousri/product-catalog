@@ -29,7 +29,7 @@ db = client[settings.DB_DATABASE]
 app = FastAPI()
 
 @app.get('/', response_model=List[Product])
-def index(page: int = 0, per_page: int = 10):
+def index(page: int = 1, per_page: int = 10):
     products = []
     for product in db.products.find().limit(per_page).skip((page - 1) * per_page):
         products.append(Product(**product))
