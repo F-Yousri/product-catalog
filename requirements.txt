@@ -3,3 +3,4 @@ pydantic
 uvicorn
 pymongo
 pydantic[dotenv]
+bson
