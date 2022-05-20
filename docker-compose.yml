@@ -26,6 +26,6 @@ services:
     depends_on:
       - mongo
     ports:
-      - 8000:8000
+      - 80:80
     volumes:
       - '.:/code'

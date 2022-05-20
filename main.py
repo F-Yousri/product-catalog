@@ -1,8 +1,7 @@
+from pymongo import MongoClient
 from bson.objectid import ObjectId
-from functools import lru_cache
 from fastapi import Depends, FastAPI, HTTPException
 from pydantic import BaseModel, BaseSettings, Field
-from pymongo import MongoClient
 from typing import List
 
 
@@ -20,6 +19,7 @@ class PyObjectId(ObjectId):
         field_schema.update(type="string")
 
 class Settings(BaseSettings):
+    DB_HOST: str = 'localhost'
     DB_USERNAME: str = ''
     DB_PASSWORD: str = ''
     DB_DATABASE: str = ''
@@ -42,7 +42,7 @@ class Product(BaseModel):
 
 settings = Settings()
 
-client = MongoClient('mongodb://%s:%s@mongo' % (settings.DB_USERNAME, settings.DB_PASSWORD))
+client = MongoClient('mongodb://%s:%s@%s' % (settings.DB_USERNAME, settings.DB_PASSWORD, settings.DB_HOST))
 db = client[settings.DB_DATABASE]
 
 app = FastAPI()
