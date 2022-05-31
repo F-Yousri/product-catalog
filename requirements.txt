@@ -3,3 +3,4 @@ pydantic
 pymongo
 pydantic[dotenv]
 uvicorn
+confluent-kafka

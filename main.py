@@ -3,7 +3,19 @@ from bson.objectid import ObjectId
 from fastapi import Depends, FastAPI, HTTPException
 from pydantic import BaseModel, BaseSettings, Field
 from typing import List
+from configparser import ConfigParser
+from confluent_kafka import Producer
 
+
+# Parse the configuration.
+# See https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md
+config_parser = ConfigParser()
+config_parser.read('kafka-config.ini')
+config = dict(config_parser['default'])
+
+# Create Producer instance
+producer = Producer(config)
+topic = "emails"
 
 class PyObjectId(ObjectId):
     @classmethod
@@ -45,6 +57,14 @@ settings = Settings()
 client = MongoClient('mongodb://%s:%s@%s' % (settings.DB_USERNAME, settings.DB_PASSWORD, settings.DB_HOST))
 db = client[settings.DB_DATABASE]
 
+# failed delivery (after retries).
+def delivery_callback(err, msg):
+    if err:
+        print('ERROR: Message failed delivery: {}'.format(err))
+    else:
+        print("Produced event to topic {topic}: key = {key:12} value = {value:12}".format(
+            topic=msg.topic(), key=msg.key().decode('utf-8'), value=msg.value().decode('utf-8')))
+
 app = FastAPI()
 
 @app.get('/products', response_description="Get all products", response_model=List[Product], response_model_exclude_none=True)
@@ -58,6 +78,7 @@ def index(page: int = 1, per_page: int = 10):
 def create(product: Product):
     product_id = db.products.insert_one(product.dict()).inserted_id
     created_product = db.products.find_one({'_id': product_id})
+    producer.produce(topic, product.title, str(product_id), callback=delivery_callback)
     return Product(**created_product)
 
 @app.get('/products/{id}', response_description="Get product by id", response_model=Product, response_model_exclude_none=True)
